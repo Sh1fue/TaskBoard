@@ -7,8 +7,7 @@ import (
 type Priority int
 
 const (
-	PrioritySoSo Priority = iota
-	PriorityLow
+	PriorityLow Priority = iota
 	PriorityMedium
 	PriorityHigh
 	PriorityCritical
@@ -16,8 +15,6 @@ const (
 
 func (p Priority) String() string {
 	switch p {
-	case PrioritySoSo:
-		return "Можно не торопиться"
 	case PriorityLow:
 		return "Низкий"
 	case PriorityMedium:
@@ -34,10 +31,9 @@ func (p Priority) String() string {
 type Status string
 
 const (
-	StatusNotActive Status = "Не взяты"
-	StatusActive    Status = "Активны"
-	StatusDone      Status = "Готовы"
-	StatusDeadLine  Status = "Сгорели"
+	StatusActive   Status = "Активны"
+	StatusDone     Status = "Готовы"
+	StatusDeadLine Status = "Сгорели"
 )
 
 type Task struct {
@@ -49,7 +45,6 @@ type Task struct {
 	Status      Status    `json:"status"`
 	CreatedAt   time.Time `json:"created_at"`
 	DueDate     time.Time `json:"due_date"`
-	DeadLine    time.Time `json:"deadline"`
 }
 
 func (t *Task) IsDead() bool {
@@ -69,12 +64,12 @@ func (t *Task) UpdateStatus() {
 	}
 
 }
-func (t *Task) IsDueSoon(HoursBefore int) bool{
-	if t.Status == StatusDone || t.DueDate.IsZero(){
+func (t *Task) IsDueSoon(HoursBefore int) bool {
+	if t.Status == StatusDone || t.DueDate.IsZero() {
 		return false
-	} 
-	now:= time.Now()
+	}
+	now := time.Now()
 
 	return t.DueDate.Before(now) &&
-	t.DueDate.Sub(now).Hours() <= float64(HoursBefore) 
+		t.DueDate.Sub(now).Hours() <= float64(HoursBefore)
 }
