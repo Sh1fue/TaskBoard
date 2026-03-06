@@ -2,7 +2,7 @@ package repository
 
 import (
 	"context"
-	"trello_parody/cmd/server/internal/domain"
+	"trello_parody/internal/domain"
 )
 
 type UserRepository interface {
