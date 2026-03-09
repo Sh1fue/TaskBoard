@@ -1,47 +1,64 @@
 package service
 
 import (
-	"errors"
-	"time"
+	"context"
+	"fmt"
 	"trello_parody/internal/domain"
+
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-type CreateTask struct {
-	Name        string          `json:"name"`
-	Description string          `json:"description"`
-	Priority    domain.Priority `json:"priority"`
-	Status      domain.Status   `json:"status"`
-	DueDate     time.Time       `json:"due_date"`
-	Timezone    string          `json:"timezone"`
-}
-type CreateResponse struct {
-	Name        string          `json:"name"`
-	Description string          `json:"description"`
-	Priority    domain.Priority `json:"priority"`
-	Status      domain.Status   `json:"status"`
-	CreatedAt   time.Time       `json:"created_at"`
-	DueDate     time.Time       `json:"due_date"`
+type TaskService struct {
+	db *pgxpool.Pool
 }
 
-func Create(req *CreateTask) (*CreateResponse, error) {
-	if req.Name == "" {
-		return nil, errors.New("Поле обязательно к вводу")
+func NewTaskService(db *pgxpool.Pool) *TaskService {
+	return &TaskService{
+		db: db,
 	}
-	if req.DueDate.Before(time.Now()){
-		return nil, errors.New("Дата не может быть указана в прошлом")
-	}
-	loc, err := time.LoadLocation(req.Timezone)
+}
+
+func (s *TaskService) CreateTask(ctx context.Context, task *domain.Task) error {
+	query := `
+	INSERT INTO tasks (user_id, name, description, priority, status, due_date)
+	VALUES ($1,$2,$3,$4,$5,$6)
+	RETURNING id, created_at
+	`
+
+	err := s.db.QueryRow(
+		ctx,
+		query,
+		task.UserId,
+		task.Name,
+		task.Description,
+		task.Priority,
+		task.Status,
+		task.DueDate,
+	).Scan(&task.ID, &task.CreatedAt)
 	if err != nil {
-		loc = time.UTC
+		return err
 	}
+	return err
+}
 
-	return &CreateResponse{
-		Name:        req.Name,
-		Description: req.Description,
-		Priority:    req.Priority,
-		Status:      req.Status,
-		CreatedAt:   time.Now().In(loc),
-		DueDate:     req.DueDate,
-	},nil
+func (s *TaskService) UpdateTask(ctx context.Context, task *domain.Task) error {
+	query := `
+	UPDATE TASKS
+	SET name=$1, description=$2, priority=$3,status=$4,due_date=$5,
+	WHERE id=$6
+	`
 
+	_, err := s.db.Exec(
+		ctx,
+		query,
+		task.Name,
+		task.Description,
+		task.Priority,
+		task.Status,
+		task.DueDate,
+	)
+	if err != nil {
+		return fmt.Errorf("Неверные данные")
+	}
+	return err
 }
